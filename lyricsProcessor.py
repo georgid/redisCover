@@ -17,7 +17,7 @@ def fetchLyricsThumbnail(trackID):
     url +="&track_id=" + str(trackID)
     url +="&format=json"
 
-    print url
+#     print url
     
     # URL lib2
     try:

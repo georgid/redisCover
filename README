@@ -1,0 +1,23 @@
+
+dependencies:
+-pyaudio (to bridge to PortAudio)
+-pyspotify
+-libspotify
+
+Cover versions are retrieved from the MSD-SecondHand
+http://labrosa.ee.columbia.edu/millionsong/secondhand
+they are around 5000 songs with 3-4 cover versions on average 
+
+
+Spotify API requires some tweaking: 
+
+
+playing music:
+https://pyspotify.mopidy.com/en/latest/quickstart/#playing-music
+
+redisCover uses PortAudio 
+https://pyspotify.mopidy.com/en/v1.11/audiosink/
+although it has some issues:
+https://github.com/mopidy/pyspotify/issues/132  
+
+

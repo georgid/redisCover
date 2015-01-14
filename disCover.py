@@ -2,70 +2,84 @@
 Created on Dec 14, 2014
 
 @author: joro
+
+spotify playing logic adapted from: 
+https://github.com/mopidy/pyspotify/tree/v2.x/develop/examples
+
 '''
 
-import spotify
-
-from getCoverTrackIDs import getListCoverTracks
-import threading
-import time
 
 
-class ConnectorSpotify(object):
-    
-    
-    def connectToSpotify(self):
-        self.session = spotify.Session()
-    
-        loop = spotify.EventLoop(self.session)
-    
-        loop.start()
-    
-        audio = spotify.PortAudioSink(self.session)
-        
-        self.logged_in = threading.Event()
-        self.end_of_track = threading.Event()
-        
-        self.session.on(spotify.SessionEvent.CONNECTION_STATE_UPDATED, self.on_connection_state_updated)
-        self.session.on(spotify.SessionEvent.END_OF_TRACK, self.on_end_of_track)
-        
-        # LOGIN
-        self.session.login('1184035535', '7Navuhodonosor', remember_me=True)
-    
-    def on_connection_state_updated(self, session):
-        if self.session.connection.state is spotify.ConnectionState.LOGGED_IN:
-            self.logged_in.set()
-    
-    def on_end_of_track(self):
-        self.end_of_track.set()
-        
-    def playinSpotify(self, listCoverTracks):
-        
-        for cover in listCoverTracks:
-            
-            
-            trackURI="spotify:track:" + cover[0]
-            track = self.session.get_track(trackURI).load()
-            self.session.player.load(track)
-            
-            beginTs = cover[1][1]
-            duration = cover[1][2]
-            self.session.player.seek(int(beginTs * 1000))
-            self.session.player.play()
-            
-            time.sleep(duration + 1)
+from getCoverTrackIDs import addSpotifyIDs, sortCoversByDuration
+
+from MSDmatcher import loadSongs, loadMSD2MXMMapping, queryBySongName,\
+    matchMSD2MXM
+import sys
+from ConnectorSpotify import ConnectorSpotify
+
+
+
 
 
     
     
 def doit():
+    print
+    print "-------------------redisCover------------------------" 
+    print ("the fastest cover version discovery service\n\n\n")
     
     spotifier = ConnectorSpotify()
     spotifier.connectToSpotify()
+#     
+    # load cover dataset
+    resultDict = loadSongs()
+    dictMapping = loadMSD2MXMMapping()
     
-    coverTracks = getListCoverTracks()
+    query = 'What A Wonderful World'
+    query = raw_input("\nwhich song would you like? give me a name:\n\n")
     
-    spotifier.playinSpotify(coverTracks)
+#     query = "Smells like teen Spirit"
+#     #query = 'killing me softly'
+#     query = 'billy jean'
+#     query = 'What A Wonderful World'
+     
+    print ("searching covers... please drink some beer while waiting!\n\n")
+    
+    ### I. find covers
+    ############
+    ## 1) search in MSD
+    listMSDIDs = queryBySongName(query, resultDict)
+    if len(listMSDIDs) == 0:
+        sys.exit( "sorry, no covers found in MSD !... :( ")
+    
+    #############
+    # 2) match to MXM
+    listMxmTrackIDs = matchMSD2MXM(listMSDIDs, dictMapping)
+    
+    if len(listMxmTrackIDs) == 0:
+        sys.exit( "sorry, no covers found in musixMatch !... :( ")
+
+    #############
+    # 3) sort MXMs according to duration
+    #     listMxmTrackIDs = [u"52116384", u"35168477", u"18102333"]
+    sortedTracksAndDurations = sortCoversByDuration(listMxmTrackIDs)
+    
+    if len(sortedTracksAndDurations) == 0:
+        sys.exit(sys.exit( "sorry, no covers with lyrics and subtitles in musixMatch. Please add them :) ...  "))
+
+    ###########
+    # II. play in spotify
+
+    #############
+    # 1) add spotify ids 
+    coverTracksWithSpotify = addSpotifyIDs(sortedTracksAndDurations)
+    
+    if len(coverTracksWithSpotify) == 0:
+        sys.exit( "sorry, no audio found in spotify for covers !... :( ")
+    ################
+    # 2) play 
+
+    spotifier.playinSpotify(coverTracksWithSpotify)
 
 
 

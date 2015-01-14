@@ -20,7 +20,7 @@ def loadMSD2MXMMapping():
     return dictMapping
 
 def loadSongs():
-    URI_SHSFile = "/Users/joro/Downloads/shs_dataset_test.txt"
+    URI_SHSFile = "/Users/joro/Downloads/shs_dataset_all.txt"
     f = open (URI_SHSFile)
     
     resultDict = []
@@ -28,8 +28,9 @@ def loadSongs():
         line = f.readline()
         if not line:
             break
-    #     print line
+#         print "line:", line
         tokens = line.split(',')
+        #TODO check that line not empty
         
         if tokens[0].strip()[0].strip() == '%':
             key_ = tokens[-1].strip().lower()
@@ -46,13 +47,23 @@ def loadSongs():
             resultDict.append((key_,listsMSD_IDs))
     return resultDict
 
-def queryBySongName(query):
+def queryBySongName(query, resultDict):
 
     query = query.strip().lower()
     for cover_ in resultDict:
     #     print cover_
         if cover_[0] == query:
             return cover_[1]
+
+def matchMSD2MXM(listMSDIDs, dictMapping): 
+    listMXM_IDs= []
+    for  MSDID in  listMSDIDs:
+        if MSDID in dictMapping:
+            MXMID = dictMapping[MSDID]
+            listMXM_IDs.append(MXMID)
+    return listMXM_IDs
+        
+        
 
 if __name__ == '__main__':
     
@@ -64,8 +75,8 @@ if __name__ == '__main__':
     #query = 'killing me softly'
     query = 'billy jean'
     
-    listMSDIDs = queryBySongName(query)
-    print listMSDIDs
+#     listMSDIDs = queryBySongName(query)
+#     print listMSDIDs
     
     
     

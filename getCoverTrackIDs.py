@@ -17,7 +17,7 @@ def apiMXMGet(trackID):
     url +="&format=json"
     url +="&subtitle_format=mxm"
 
-    print url
+#     print url
     
     # URL lib2
     try:
@@ -84,20 +84,69 @@ def getDuration(subtitles, lyricsThumbnail):
     return resultDuration, beginTs 
 
 
-
-
-
-def getSortedCovers(listTrackIDs):
+def callHasLyricsAndSubtitles(trackID):
     
+    # build api url
+    url = "http://api.musixmatch.com/ws/1.1/track.get?apikey=3122752d0d32edee9dedd70e79141de9"
+    url +="&track_id=" + str(trackID)
+    url +="&format=json"
+
+#     print url
+    
+    # URL lib2
+    try:
+        response = urllib2.urlopen(url)
+    except urllib2.HTTPError:
+        pass
+    
+    return response
+
+def hasLyricsAndSubtitles(response):
+    
+    response = json.load(response)
+    if response['message']["header"]["status_code"] ==404:
+        return False
+        
+    #print response
+    #response = json.load( urllib2.urlopen( url ) )
+    
+    #print response
+    artistMbid = None
+    try:
+    #parse response body
+        hasLyrics = response['message']['body']['track']['has_lyrics']
+        
+        hasSubtitles = response['message']['body']['track']['has_subtitles']
+    except:
+        pass
+    if hasLyrics==0 or hasSubtitles==0:
+        return False
+    return True
+    
+    
+
+def sortCoversByDuration(listMXMTrackIDs):
+    '''
+    for Mxm Tracks retrieve their thumbnails.
+    Sort by duration of thumbnails
+    '''
     resultSortedDurationsDict = []
     
         
-#     response = fetchLyricsThumbnail(listTrackIDs[0])
+#     response = fetchLyricsThumbnail(listMXMTrackIDs[0])
 #     lyricsThumbnail = parseLyricsThumbnail(response)
 #     
-    for trackID in listTrackIDs:
+    for trackID in listMXMTrackIDs:
+        
+        
+        #sanity check: has lyrics and subtitles
+        response = callHasLyricsAndSubtitles(trackID)
+        if not hasLyricsAndSubtitles(response):
+            continue
+            
         
         response = fetchLyricsThumbnail(trackID)
+        
         lyricsThumbnail = parseLyricsThumbnail(response)
         
         # get subtitles
@@ -130,8 +179,9 @@ def getInfo(trackID):
 
 def getSpotifyID(response):
     '''
-    response - string
+    returns spotifyID 
     '''
+    
     response = json.load(response)
     #print response
     #response = json.load( urllib2.urlopen( url ) )
@@ -146,29 +196,34 @@ def getSpotifyID(response):
     
     return spotifyID
 
-def getListCoverTracks():
+def addSpotifyIDs(sortedMxmTracksAndDurations):
     '''
-    return spotify IDs and durations
+    check if spotify IDs present, and add 
+    @param - mxmIDs
     '''
-
-    listTrackIDs = [u"52116384", u"35168477", u"18102333"]
-    sortedTracksAndDurations = getSortedCovers(listTrackIDs)
     
     # add a first field spotifyID
     sortedPlusSpotify = []
     
-   # get as all spotify IDs: 
-    for trackAndDur in sortedTracksAndDurations:
+   # get as well spotify IDs: 
+    for trackAndDur in sortedMxmTracksAndDurations:
         response = getInfo(trackAndDur[0])
         
         spotifyID = None
         spotifyID = getSpotifyID(response)
-        if spotifyID != None:
+        if spotifyID != None and spotifyID != "":
             sortedPlusSpotify.append( (spotifyID, trackAndDur))
-        
+            
+#     for cover in coverTracks:
+#         if cover[0] !="":
+#             coverTracksWithSpotify.append(cover)
+                    
     return sortedPlusSpotify
+
+
+
         
 if __name__=="__main__":
-    sortedPlusSpotify = getListCoverTracks()
-    print sortedPlusSpotify 
+    sortedPlusSpotify = addSpotifyIDs()
+#     print sortedPlusSpotify 
 
