@@ -9,8 +9,10 @@ import json
 
 import sys
 from lyricsProcessor import fetchLyricsThumbnail, parseLyricsThumbnail
+from eyed3.utils import LoggingAction
+import logging
 
-def apiMXMGet(trackID):
+def callMXMGetAPI(trackID):
     # build api url
     url = "http://api.musixmatch.com/ws/1.1/track.subtitle.get?apikey=3122752d0d32edee9dedd70e79141de9"
     url +="&track_id=" + str(trackID)
@@ -48,8 +50,11 @@ def getAnnotaitonForResponse(response):
 
 def getDuration(subtitles, lyricsThumbnail):
     '''
-    getDuration
+    @param subtitles: - all lines of lyrics and their Ts
+    @param lyricsThumbnail: text of thumbnail line
     '''
+#     lyricsThumbnail = 'what a wonderful world'
+#     print "lyrics THumbnail: " + lyricsThumbnail
     subtitles = json.loads(subtitles)
     
     resultDuration = 0
@@ -62,7 +67,8 @@ def getDuration(subtitles, lyricsThumbnail):
         if subtutle == lyricsThumbnail:
             # get next line to get duration
             if len(subtitles) == index+1:
-                sys.exit("subtitle line is last in lyrics. Not implemented")
+                logging.debug("subtitle line is last in lyrics. Not implemented")
+                continue
                 
             endTs = subtitles[index+1]['time']['total']
             
@@ -95,15 +101,16 @@ def callHasLyricsAndSubtitles(trackID):
     
     # URL lib2
     try:
-        response = urllib2.urlopen(url)
+        responseHTTP = urllib2.urlopen(url)
     except urllib2.HTTPError:
         pass
     
+    response = json.load(responseHTTP)
+
     return response
 
 def hasLyricsAndSubtitles(response):
     
-    response = json.load(response)
     if response['message']["header"]["status_code"] ==404:
         return False
         
@@ -143,14 +150,15 @@ def sortCoversByDuration(listMXMTrackIDs):
         response = callHasLyricsAndSubtitles(trackID)
         if not hasLyricsAndSubtitles(response):
             continue
-            
         
+        artistName = response['message']['body']['track']['artist_name']             
+
         response = fetchLyricsThumbnail(trackID)
         
         lyricsThumbnail = parseLyricsThumbnail(response)
         
         # get subtitles
-        response = apiMXMGet(trackID)
+        response = callMXMGetAPI(trackID)
         subtitles = getAnnotaitonForResponse(response) 
         
         # TODO: if no subtitles, exit
@@ -158,7 +166,7 @@ def sortCoversByDuration(listMXMTrackIDs):
         if (duration==None and beginTs==None):
             continue
         
-        resultSortedDurationsDict.append((trackID, beginTs, duration))
+        resultSortedDurationsDict.append((trackID, beginTs, duration, artistName))
     
     #sort by duration
     resultSortedDurationsDict = sorted(resultSortedDurationsDict, key=lambda t: t[2], reverse=True)

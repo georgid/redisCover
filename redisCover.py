@@ -12,7 +12,7 @@ https://github.com/mopidy/pyspotify/tree/v2.x/develop/examples
 
 from getCoverTrackIDs import addSpotifyIDs, sortCoversByDuration
 
-from MSDmatcher import loadSongs, loadMSD2MXMMapping, queryBySongName,\
+from MSDmatcher import loadSongsInDict, loadMSD2MXMMapping, queryBySongName,\
     matchMSD2MXM
 import sys
 from ConnectorSpotify import ConnectorSpotify
@@ -26,35 +26,39 @@ from ConnectorSpotify import ConnectorSpotify
 def doit():
     print
     print "-------------------redisCover------------------------" 
-    print ("the fastest cover version discovery service\n\n\n")
+    print ("the smart cover version discovery service\n\n")
     
     spotifier = ConnectorSpotify()
     spotifier.connectToSpotify()
 #     
     # load cover dataset
-    resultDict = loadSongs()
-    dictMapping = loadMSD2MXMMapping()
+    MSDtracksDict = loadSongsInDict()
+    MSDTrack2MXMTrackMapping = loadMSD2MXMMapping()
     
-    query = 'What A Wonderful World'
     query = raw_input("\nwhich song would you like? give me a name:\n\n")
     
 #     query = "Smells like teen Spirit"
-#     #query = 'killing me softly'
+#     query = 'killing me softly'
 #     query = 'billy jean'
 #     query = 'What A Wonderful World'
      
-    print ("searching covers... please drink some beer while waiting!\n\n")
+    print ("\nsearching covers... \nplease drink some beer while waiting!\n\n")
     
     ### I. find covers
     ############
-    ## 1) search in MSD
-    listMSDIDs = queryBySongName(query, resultDict)
-    if len(listMSDIDs) == 0:
+    
+        ## 1) search in MSD
+    listMSDIDs = queryBySongName(query, MSDtracksDict)
+    try: listMSDIDs
+    except TypeError:
         sys.exit( "sorry, no covers found in MSD !... :( ")
+    else:
+        if len(listMSDIDs) == 0:
+            sys.exit( "sorry, no covers found in MSD !... :( ")
     
     #############
     # 2) match to MXM
-    listMxmTrackIDs = matchMSD2MXM(listMSDIDs, dictMapping)
+    listMxmTrackIDs = matchMSD2MXM(listMSDIDs, MSDTrack2MXMTrackMapping)
     
     if len(listMxmTrackIDs) == 0:
         sys.exit( "sorry, no covers found in musixMatch !... :( ")
@@ -65,7 +69,7 @@ def doit():
     sortedTracksAndDurations = sortCoversByDuration(listMxmTrackIDs)
     
     if len(sortedTracksAndDurations) == 0:
-        sys.exit(sys.exit( "sorry, no covers with lyrics and subtitles in musixMatch. Please add them :) ...  "))
+        sys.exit(sys.exit( "sorry, for list of covers  there are no aligned lyrics (subtitles) in musixMatch. Please add them :) ...  "))
 
     ###########
     # II. play in spotify
@@ -78,6 +82,8 @@ def doit():
         sys.exit( "sorry, no audio found in spotify for covers !... :( ")
     ################
     # 2) play 
+    print "----------------------------------------------------" 
+    print ("playing the discovered covers: from slower to faster \n")
 
     spotifier.playinSpotify(coverTracksWithSpotify)
 

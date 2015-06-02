@@ -1,16 +1,42 @@
+rediscover  - the smart cover version discovery service
+---------------------------
+
+For now available as desktop version (for mac OS X)
+working on android version...
+interested to use it or support with dev: write me to joro.dzhambazov@gmail.com
 
 dependencies:
 -pyaudio (to bridge to PortAudio)
 -pyspotify
 -libspotify
 
-Cover versions are retrieved from the MSD-SecondHand
+steps
+I. find covers
+
+1)
+Cover versions for a song title are queried from a file: the MSD-SecondHand
 http://labrosa.ee.columbia.edu/millionsong/secondhand
 they are around 5000 songs with 3-4 cover versions on average 
 
+return: list of MSD (echonest) track IDs
+
+2) match form MSD to musixMatch (MXM) IDs
+return: list of MXM song IDs
+
+3) discover most representative audio segments (thumnbnails) and get their timestamps 
+(uses with musixMatch API to get snippet from lyrics and then gets timestamps from available subtitles) 
+sort by duration of thumbnails
+
+return:   list of sorted songIDs and corresponding ts-s  
+
+II. play with pyspotify: 
+1) add spotify IDs from musixmatch
+
+2) play: 
+cannot play form given ts to other ts, so we use player.seek(), timer.wait() and player.unload()
+
 
 Spotify API requires some tweaking: 
-
 
 playing music:
 https://pyspotify.mopidy.com/en/latest/quickstart/#playing-music
@@ -21,3 +47,21 @@ although it has some issues:
 https://github.com/mopidy/pyspotify/issues/132  
 
 
+------ 
+workplan: 
+
+port to android
+https://developer.spotify.com/technologies/spotify-android-sdk/tutorial/
+and
+https://developer.spotify.com/android-sdk-docs/com/spotify/sdk/android/playback/Player.html
+
+
+thumbnails from musixMatch do not have smae lyrics: 
+ideas:
+ cluster thumbnails: exclude songs with  thumbnails outside of cluster
+ as similarity metris use levenshtein distance 
+ 
+   
+optimize data structures in beginning
+
+see as well issues

@@ -52,8 +52,18 @@ class ConnectorSpotify(object):
             except:
                 continue
             beginTs = cover[1][1]
+            beginTs = max(beginTs-1,0) 
             duration = cover[1][2]
-            self.session.player.seek(int(beginTs * 1000))
+            #  make sure max duration is not exceeded
+            endTsTrack = track.duration
+            endTs = min (endTsTrack - 1, beginTs + duration) 
+            playDuration = endTs - beginTs
+            artist = cover[1][3]
+            print  artist + '\n'
+            self.session.player.seek(int(beginTs* 1000))
             self.session.player.play()
             
-            time.sleep(duration + 1)
+            ##### sleep until playing for duration of thumbnail
+            time.sleep(playDuration) # in seconds
+            self.session.player.unload()
+            time.sleep(1) # break 1 second
